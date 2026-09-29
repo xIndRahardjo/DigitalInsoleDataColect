@@ -1,64 +1,67 @@
 # SOP PENGGUNAAN ALAT DIAFOS V2
-## Standar Operasional Prosedur — Sistem Monitoring Kaki Diabetik
+## Standar Operasional Prosedur — Sistem Monitoring Kaki Diabetik (ESP-NOW & SD Logger)
 
-**Versi Alat:** DIAFOS V2 (Desain PCB Terpisah + Casing Betis)  
-**Dokumen:** SOP-DIAFOS-V2-001  
-**Berlaku untuk:** Operator / Peneliti / Tenaga Kesehatan
+**Versi Alat:** DIAFOS V2 (Desain PCB Terpisah + ESP-NOW + SD Card Logger)  
+**Dokumen:** SOP-DIAFOS-V2-002  
+**Berlaku untuk:** Operator / Peneliti / Tenaga Kesehatan / Pasien  
 
 ---
 
 ## PERHATIAN PENTING
 
-> Alat ini adalah perangkat monitoring **untuk keperluan penelitian**. Data yang dihasilkan **TIDAK** digunakan sebagai dasar diagnosis medis atau keputusan terapi klinis. Selalu konsultasikan hasil pengukuran dengan tenaga kesehatan profesional.
+> Alat ini adalah perangkat monitoring **untuk keperluan penelitian**. Data yang dihasilkan **TIDAK** digunakan sebagai dasar diagnosis medis atau keputusan terapi klinis secara mandiri. Selalu konsultasikan hasil pengukuran dengan dokter / tenaga kesehatan profesional.
 
 ---
 
-## Daftar Isi
+## 📋 Daftar Isi
 
-1. [Deskripsi Alat](#1-deskripsi-alat)
+1. [Deskripsi Sistem & Arsitektur ESP-NOW](#1-deskripsi-sistem--arsitektur-esp-now)
 2. [Komponen Fisik Alat](#2-komponen-fisik-alat)
 3. [Persiapan Sebelum Pemasangan](#3-persiapan-sebelum-pemasangan)
-4. [Prosedur Pemasangan Alat](#4-prosedur-pemasangan-alat)
-5. [Prosedur Pengaktifan Sistem](#5-prosedur-pengaktifan-sistem)
-6. [Prosedur Koneksi WiFi Pertama Kali](#6-prosedur-koneksi-wifi-pertama-kali)
-7. [Monitoring Data Real-Time](#7-monitoring-data-real-time)
-8. [Memahami Indikator Alert](#8-memahami-indikator-alert)
-9. [Prosedur Pelepasan Alat](#9-prosedur-pelepasan-alat)
-10. [Pemeliharaan Harian](#10-pemeliharaan-harian)
-11. [Troubleshooting Cepat](#11-troubleshooting-cepat)
-12. [Checklist Harian](#12-checklist-harian)
+4. [Prosedur Pemasangan Alat pada Kaki & Betis Pasien](#4-prosedur-pemasangan-alat-pada-kaki--betis-pasien)
+5. [Prosedur Pengaktifan & Inisialisasi ESP-NOW](#5-prosedur-pengaktifan--inisialisasi-esp-now)
+6. [Verifikasi Koneksi ESP-NOW & SD Card Logger](#6-verifikasi-koneksi-esp-now--sd-card-logger)
+7. [Prosedur & Protokol Gerakan Pasien (Panduan Pengambilan Data)](#7-prosedur--protokol-gerakan-pasien-panduan-pengambilan-data)
+8. [Monitoring & Manajemen Data (SD Card CSV)](#8-monitoring--manajemen-data-sd-card-csv)
+9. [Memahami Indikator Alert & Batas Kritis](#9-memahami-indikator-alert--batas-kritis)
+10. [Prosedur Pelepasan & Perawatan Alat](#10-prosedur-pelepasan--perawatan-alat)
+11. [Troubleshooting Cepat (ESP-NOW & SD Card)](#11-troubleshooting-cepat-esp-now--sd-card)
+12. [Checklist Harian (Pra & Pasca Sesi)](#12-checklist-harian-pra--pasca-sesi)
 
 ---
 
-## 1. Deskripsi Alat
+## 1. Deskripsi Sistem & Arsitektur ESP-NOW
 
-DIAFOS V2 adalah sistem monitoring kaki yang dirancang untuk mengukur parameter fisiologis pada pasien **Diabetes Foot Ulcer (DFU)**. Versi ini menggunakan desain **dua bagian terpisah** yang dihubungkan dengan kabel:
+DIAFOS V2 adalah sistem akuisisi data fisiologis multiparameter pada kaki pasien **Diabetes Foot Ulcer (DFU)** yang bekerja secara terintegrasi menggunakan protokol nirkabel **ESP-NOW** (point-to-point 2.4GHz, tanpa memerlukan router WiFi atau jaringan internet/Blynk).
 
-### Bagian 1 — Sol Sensor (Insole Unit)
+Sistem terdiri dari 2 unit utama:
 
-Berisi seluruh sensor yang tertanam di dalam atau ditempelkan pada sol alas kaki. Sol ini dimasukkan ke dalam sepatu atau sandal pasien.
+### 1.1 Unit Pengirim (ESP32 #1 - Transmitter / Leg & Insole Unit)
+- **Sol Sensor (Insole Unit):** Dimasukkan ke dalam alas kaki pasien. Berisi 5 sensor tekanan **FSR402** dan sensor suhu & kelembapan **SHT31** (I2C).
+- **Casing Betis (Calf Unit):** Berisi PCB transmitter ESP32 #1 yang terpasang di betis pasien via strap velcro, menerima kabel dari sol sensor lalu mengirimkan data secara nirkabel via ESP-NOW (Channel 1).
 
-### Bagian 2 — Casing Betis (Calf Unit)
-
-Berisi PCB utama (ESP32 + komponen elektronik) yang dikemas dalam casing. Casing ini dipasang di betis pasien menggunakan strap velcro.
+### 1.2 Unit Penerima & Logger (ESP32 #2 - Receiver / Base Station Unit)
+- Berada di meja operator / stasioner.
+- Dilengkapi sensor oksimetri **MAX30105** (SpO2 & BPM) yang bersentuhan dengan kulit pergelangan/kaki.
+- Menerima data nirkabel dari ESP32 #1 via ESP-NOW.
+- Menggabungkan seluruh data parameter dan menyimpannya secara otomatis ke **SD Card** dalam format file `data_kesehatan.csv` setiap **1 detik**.
 
 ```
-      [CASING BETIS]
-     +--------------+
-     |  PCB + ESP32 |  <--- Dipasang di betis
-     |  WiFi/Power  |      menggunakan strap velcro
-     +------+-------+
-            |
-            |  Kabel panjang (bundle kabel sensor)
-            |
-     +------+-------+
-     |  SOL SENSOR  |  <--- Dimasukkan ke dalam
-     | FSR1  FSR2   |      sepatu / alas kaki
-     | FSR3  FSR4   |
-     | FSR5         |
-     | MAX30102     |
-     | HTU21D       |
-     +--------------+
++------------------------------------+          +-------------------------------------+
+|        ESP32 #1 (TRANSMITTER)      |          |       ESP32 #2 (RECEIVER / LOGGER)  |
+|      Dipasang pada Betis Pasien    |          |            Stasiun Operator         |
+|                                    |          |                                     |
+|  +----------+                      |  ESP-NOW |  +----------+   +---------------+  |
+|  |  SHT31   |--I2C-----------------+--------->|  | MAX30105 |   |   SD Card     |  |
+|  | Suhu +   |                      | (Ch 1)   |  |  BPM +   |   |  /data_       |  |
+|  | Lembap   |                      |          |  |  SpO2    |   |  kesehatan    |  |
+|  +----------+                      |          |  +----------+   |  .csv         |  |
+|                                    |          |                  +---------------+  |
+|  +----------+                      |          |                                     |
+|  | FSR402   |--ADC (5 Titik Sol)---+          |  Data gabungan disimpan setiap 1s  |
+|  | Tekanan  |                      |          +-------------------------------------+
+|  +----------+                      |
++------------------------------------+
 ```
 
 ---
@@ -66,669 +69,361 @@ Berisi PCB utama (ESP32 + komponen elektronik) yang dikemas dalam casing. Casing
 ## 2. Komponen Fisik Alat
 
 ### 2.1 Sol Sensor (Insole Unit)
-
 | No | Komponen | Lokasi pada Sol | Fungsi |
 |----|----------|----------------|--------|
 | 1 | FSR402 — Sensor 1 | Tumit (heel) | Mengukur tekanan tumit |
 | 2 | FSR402 — Sensor 2 | Telapak depan (metatarsal) | Mengukur tekanan bola kaki |
 | 3 | FSR402 — Sensor 3 | Ibu jari kaki | Mengukur tekanan ujung kaki |
-| 4 | FSR402 — Sensor 4 | Sisi luar kaki | Mengukur tekanan tepi lateral |
-| 5 | FSR402 — Sensor 5 | Tengah telapak kaki | Mengukur tekanan tengah |
-| 6 | MAX30102 | Sisi kaki / pergelangan | Mengukur SpO2 & detak jantung |
-| 7 | HTU21D/SHT21 | Bagian atas sol (dekat kulit) | Mengukur suhu & kelembapan |
+| 4 | FSR402 — Sensor 4 | Sisi luar (lateral) | Mengukur tekanan tepi luar |
+| 5 | FSR402 — Sensor 5 | Tengah telapak kaki | Mengukur tekanan midfoot |
+| 6 | Sensor SHT31 | Bagian atas sol (dekat kulit) | Mengukur suhu (°C) & kelembapan (%RH) |
 
-### 2.2 Casing Betis (Calf Unit)
-
+### 2.2 Casing Betis (Calf Unit - ESP32 #1 Transmitter)
 | No | Komponen | Keterangan |
 |----|----------|-----------|
-| 1 | Casing plastik | Melindungi PCB dari benturan & keringat |
-| 2 | PCB utama (ESP32) | Modul komputasi dan WiFi |
-| 3 | Konektor kabel | Tempat menyambungkan bundle kabel dari sol |
-| 4 | Strap velcro | Untuk memasang casing di betis |
-| 5 | Port pengisian daya / USB | Untuk mengisi baterai atau menghubungkan ke power bank |
-| 6 | Tombol RESET | Untuk restart sistem jika diperlukan |
-| 7 | Indikator LED | Menunjukkan status sistem (menyala = aktif) |
+| 1 | Casing Proteksi | Melindungi PCB dari benturan & keringat |
+| 2 | PCB ESP32 #1 | Modul pembaca FSR + SHT31 & pemancar ESP-NOW |
+| 3 | Terminal / Konektor Kabel | Port penyambung bundle kabel dari sol |
+| 4 | Strap Velcro | Pengikat casing di betis pasien |
+| 5 | Power Supply / Baterai | LiPo / Powerbank mini pemasuk daya ESP32 #1 |
 
-### 2.3 Aksesori Tambahan
-
-| Item | Keterangan |
-|------|-----------|
-| Bundle kabel sensor | Kabel yang menghubungkan sol ke casing betis |
-| Power bank / baterai | Sumber daya portabel |
-| Kabel USB | Untuk pengisian daya atau upload program |
-| Smartphone/tablet | Untuk monitoring via aplikasi Blynk |
+### 2.3 Unit Penerima & Data Logger (ESP32 #2 Receiver)
+| No | Komponen | Keterangan |
+|----|----------|-----------|
+| 1 | PCB ESP32 #2 | Receiver ESP-NOW + pengolah data utama |
+| 2 | Sensor MAX30105 | Sensor optik SpO2 & Heart Rate (BPM) |
+| 3 | Modul SD Card + Kartu SD | Penyimpan data log CSV (`data_kesehatan.csv`) |
+| 4 | Port Kabel Data USB | Dihubungkan ke PC operator (pilihan visualisasi Serial Plotter) |
 
 ---
 
 ## 3. Persiapan Sebelum Pemasangan
 
-### 3.1 Persiapan Operator
+### 3.1 Persiapan Operator & Peralatan
+- [ ] Cuci tangan dan gunakan sarung tangan medis non-steril.
+- [ ] Pastikan **Kartu SD (FAT32)** telah terpasang pada Modul SD Card di ESP32 #2.
+- [ ] Periksa baterai/powerbank untuk ESP32 #1 (Transmitter) dan ESP32 #2 (Receiver) dalam kondisi terisi penuh (minimal 80%).
+- [ ] Pastikan MAC Address ESP32 Receiver telah dikonfigurasi dengan benar pada firmware ESP32 Transmitter (`broadcastAddress[]`).
 
-- [ ] Cuci tangan dengan sabun sebelum menangani alat
-- [ ] Gunakan sarung tangan sekali pakai jika diperlukan
-- [ ] Pastikan area kerja bersih dan kering
-
-### 3.2 Persiapan Alat
-
-- [ ] Periksa kondisi fisik casing tidak ada retak atau kerusakan
-- [ ] Periksa kondisi sol sensor tidak ada kerusakan pada sensor
-- [ ] Periksa bundle kabel tidak ada kabel yang terputus atau terkelupas
-- [ ] Periksa kondisi strap velcro pastikan masih menempel dengan baik
-- [ ] Pastikan baterai / power bank sudah terisi penuh (minimal 80%)
-- [ ] Pastikan koneksi WiFi tersedia di lokasi pengukuran
-
-### 3.3 Persiapan Pasien
-
-- [ ] Minta pasien untuk duduk dengan nyaman di kursi
-- [ ] Minta pasien untuk melepas alas kaki (sepatu / sandal)
-- [ ] Periksa kondisi kulit kaki dan betis pasien
-- [ ] Pastikan area betis yang akan dipasang casing tidak ada luka terbuka
-- [ ] Catat kondisi awal kulit pasien dalam lembar dokumentasi
-
-> **Catatan:** Jika ada luka terbuka pada betis, konsultasikan dengan tenaga medis sebelum memasang casing di area tersebut.
+### 3.2 Persiapan Pasien
+- [ ] Minta pasien duduk santai di kursi pengujian dengan posisi kaki rileks.
+- [ ] Lakukan pemeriksaan kulit kaki & betis pasien. Pastikan **TIDAK ADA LUKA TERBUKA** pada lokasi penempelan casing betis atau tempat penempatan sensor optik.
+- [ ] Bersihkan telapak kaki pasien menggunakan alkohol swab / tisu basah medis, lalu keringkan.
+- [ ] Berikan penjelasan singkat mengenai alur pengambilan data dan gerakan yang akan dilakukan pasien.
 
 ---
 
-## 4. Prosedur Pemasangan Alat
+## 4. Prosedur Pemasangan Alat pada Kaki & Betis Pasien
 
-### LANGKAH 1 — Siapkan Sol Sensor
-
-```
-[1] Ambil sol sensor dari tempat penyimpanan
-[2] Periksa seluruh permukaan sol — pastikan bersih dan kering
-[3] Pastikan semua sensor menempel dengan baik pada sol
-[4] Posisikan sol di atas lantai, sisi sensor menghadap ke atas
-```
-
-### LANGKAH 2 — Masukkan Sol ke Alas Kaki
+### LANGKAH 1 — Pemasangan Sol Sensor (Insole Unit)
+1. Ambil sol sensor dari tempat penyimpanan, pastikan kabel dan permukaan sensor bersih.
+2. Lepaskan insole bawaan dari sepatu / sandal khusus pengujian pasien.
+3. Masukkan sol sensor DIAFOS ke dalam sepatu/sandal, pastikan posisi tumit, metatarsal, dan ibu jari tepat berada di area yang sesuai.
+4. Keluarkan bundle kabel sensor melalui celah tumit/samping sepatu menuju atas.
 
 ```
-[1] Ambil sepatu atau sandal yang akan digunakan pasien
-[2] Keluarkan insole bawaan dari alas kaki jika ada
-[3] Masukkan sol sensor ke dalam alas kaki
-     - Pastikan tumit sol tepat di bagian tumit alas kaki
-     - Pastikan permukaan sol rata dan tidak terlipat
-     - Pastikan sensor FSR tidak tertekuk atau tertindih
-[4] Keluarkan bundle kabel dari alas kaki melalui sisi samping/belakang
-     - Kabel tidak boleh terjepit di bawah telapak kaki
+   Pandangan Atas Sol Sensor:
+   +-----------------------------+
+   |        [FSR 3]              |  <-- Ibu jari kaki
+   |                             |
+   |  [FSR 2]           [FSR 4] |  <-- Bola kaki & sisi luar
+   |                             |
+   |       [FSR 5]               |  <-- Tengah telapak
+   |                             |
+   |          [FSR 1]            |  <-- Tumit
+   +-----------------------------+
+   [SHT31] terpasang di area atas sol
 ```
 
-**Penempatan sensor pada sol:**
+### LANGKAH 2 — Pemasangan Casing Betis (Calf Unit)
+1. Posisikan casing betis pada sisi anterior/samping betis (5–10 cm di atas mata kaki).
+2. Lingkarkan strap velcro melingkari betis pasien.
+3. Rekatkan strap dengan kekencangan sedang:
+   - **Kriteria Tepat:** Casing tidak meluncur turun, dan operator dapat menyelipkan **1–2 jari** di antara strap dan kulit betis.
+   - **Terlalu Kencang:** Menyebabkan nyeri / bekas penekanan merah.
+   - **Terlalu Longgar:** Casing bergeser saat pasien berjalan.
+4. Sambungkan konektor kabel dari sol ke port casing betis hingga terdengar bunyi *klik* atau kencang. Berikan sedikit kelonggaran kabel (*slack*) di area pergelangan agar kabel tidak tegang saat kaki bergerak.
 
-```
-  Pandangan atas sol sensor:
-
-  +-----------------------------+
-  |        [FSR 3]              |  <-- Ibu jari
-  |                             |
-  |  [FSR 2]           [FSR 4] |  <-- Bola kaki & sisi luar
-  |                             |
-  |       [FSR 5]               |  <-- Tengah
-  |                             |
-  |          [FSR 1]            |  <-- Tumit
-  +-----------------------------+
-
-  [MAX30102] dan [HTU21D] di sisi samping sol
-  Bundle kabel keluar dari sisi belakang sol
-```
-
-### LANGKAH 3 — Pasang Alas Kaki ke Kaki Pasien
-
-```
-[1] Minta pasien untuk mengenakan alas kaki yang sudah dipasang sol sensor
-[2] Pastikan pasien merasa nyaman — tidak ada tekanan yang tidak wajar
-[3] Pastikan bundle kabel tidak menarik sol dari dalam alas kaki
-[4] Rapikan posisi kabel di sisi kaki pasien
-```
-
-### LANGKAH 4 — Posisikan Bundle Kabel
-
-```
-[1] Arahkan bundle kabel dari alas kaki ke arah betis
-[2] Jalurkan kabel di sepanjang sisi dalam kaki (sisi medial)
-[3] Kabel tidak boleh mengganggu gerak atau menyebabkan ketidaknyamanan
-[4] Sisa kabel yang berlebih digulung longgar dan diikat dengan karet
-    kecil di dekat casing
-```
-
-> **Penting:** Pastikan bundle kabel memiliki sedikit kelonggaran (slack) agar tidak tegang saat pasien bergerak atau menekuk kaki.
-
-### LANGKAH 5 — Pasang Casing pada Betis
-
-```
-[1] Ambil casing betis beserta strap velcro
-[2] Tentukan posisi pemasangan:
-     - Posisi ideal : Bagian bawah betis (sisi anterior / depan)
-     - Ketinggian   : Sekitar 5-10 cm di atas mata kaki
-     - Sisi         : Anterior (depan betis) untuk kenyamanan maksimal
-
-[3] Lingkarkan strap velcro di sekeliling betis
-[4] Posisikan casing di tengah strap (bagian depan betis)
-[5] Rekatkan strap velcro dengan kekencangan yang tepat:
-     TEPAT      : Casing tidak bergerak, bisa masuk 1-2 jari di bawah strap
-     TERLALU KENCANG : Meninggalkan bekas, tidak bisa masukkan jari
-     TERLALU LONGGAR : Casing mudah bergerak, bisa masuk 3+ jari
-
-[6] Tanyakan kepada pasien apakah ada rasa tidak nyaman atau kesemutan
-     Jika ya, kendurkan strap segera
-```
-
-### LANGKAH 6 — Sambungkan Konektor Kabel
-
-```
-[1] Ambil ujung bundle kabel dari alas kaki
-[2] Hubungkan ke port konektor di casing betis
-     - Pastikan konektor masuk dengan benar (tidak miring)
-     - Rasakan sensasi "klik" jika ada pengaman konektor
-[3] Pastikan kabel tidak dalam kondisi tertarik tegang
-[4] Rapikan sisa kabel di sepanjang kaki
-```
-
-### LANGKAH 7 — Hubungkan Sumber Daya
-
-```
-[1] Sambungkan power bank ke port USB pada casing
-    ATAU pastikan baterai internal sudah terpasang dan terisi
-[2] Tempatkan power bank di saku atau kaitkan pada strap tambahan
-[3] Pastikan kabel USB tidak menganggu gerak pasien
-```
+### LANGKAH 3 — Pemasangan Sensor MAX30105 (Oksimetri)
+1. Tempelkan modul sensor MAX30105 pada kulit pergelangan kaki / punggung kaki / jari kaki sesuai lokasi pengukuran yang ditentukan.
+2. Rekatkan menggunakan tape medis hipoalergenik agar sensor bersentuhan erat dengan kulit tanpa menekan berlebihan (untuk menghindari oklusi pembuluh darah).
 
 ---
 
-## 5. Prosedur Pengaktifan Sistem
+## 5. Prosedur Pengaktifan & Inisialisasi ESP-NOW
 
-### 5.1 Menghidupkan Alat
+1. **Nyalakan ESP32 #2 (Receiver / Base Station):**
+   - Sambungkan ke powerbank / PC operator via USB.
+   - LED indikator power pada ESP32 #2 & Modul SD Card akan menyala.
+2. **Nyalakan ESP32 #1 (Transmitter / Betis Pasien):**
+   - Hubungkan baterai/powerbank pada casing betis.
+   - ESP32 #1 akan otomatis menginisialisasi sensor SHT31, ADC FSR, dan memularkan transmisi paket data ESP-NOW pada Channel 1.
+3. **Waktu Stabilisasi Sistem:**
+   - Biarkan sistem menyala dalam kondisi pasien diam selama **1–2 menit** untuk inisialisasi buffer sensor MAX30105 (100 sampel awal untuk kalkulasi SpO2 & BPM) serta penyesuaian suhu sensor SHT31.
+
+---
+
+## 6. Verifikasi Koneksi ESP-NOW & SD Card Logger
+
+Sebelum memulai protokol gerakan pengambilan data, operator **WAJIB** memverifikasi status koneksi pada Serial Monitor PC Operator (115200 baud):
+
+### 6.1 Tampilan Log Inisialisasi Normal
+```
+╔══════════════════════════════════════════════════════╗
+║   DIAFOS V2 - ESP-NOW & SD CARD LOGGER INITIALIZED   ║
+╚══════════════════════════════════════════════════════╝
+
+-> Initializing SD Card...
+   ✓ SD Card initialized successfully.
+   ✓ File 'data_kesehatan.csv' ready (Header written).
+
+-> Initializing MAX30105 Sensor...
+   ✓ MAX30105 Sensor found and configured (100Hz).
+
+-> Initializing ESP-NOW Receiver...
+   ✓ ESP-NOW Initialized (Channel 1).
+   ✓ Receiver Callback Registered.
+
+Waiting for ESP-NOW data from Transmitter (ESP32 #1)...
+[ESP-NOW RECV] Temp: 31.42 °C | Hum: 62.15 %RH | Status: OK
+[MAX30105] BPM: 74 | SpO2: 98 % | Status: VALID
+[SD LOGGER] Logged row to SD: 12000, 74, 98, 31.42, 62.15
+```
+
+### 6.2 Kriteria Kelayakan Data Sebelum Tes Dimulai
+- **ESP-NOW Link:** Data SHT31 (`Suhu` & `Kelembapan`) tidak bernilai `0.00` (menandakan sinyal ESP-NOW diterima dengan baik dari ESP32 #1).
+- **MAX30105 Status:** BPM dan SpO2 sudah tidak bernilai `0` (kalkulasi window 100 sampel telah terpenuhi).
+- **SD Card:** File CSV terbuka dan baris log bertambah setiap detik.
+
+---
+
+## 7. Prosedur & Protokol Gerakan Pasien (Panduan Pengambilan Data)
+
+Untuk mendapatkan dataset yang komprehensif sebagai referensi analisis dinamika tekanan plantar, sirkulasi perifer (SpO2/BPM), dan mikroklimat (suhu/kelembapan), pasien diminta melakukan serangkaian gerakan terstruktur di bawah bimbingan operator.
 
 ```
-[1] Pastikan semua koneksi kabel sudah terpasang dengan benar
-[2] Nyalakan alat melalui tombol power atau hubungkan ke power bank
-[3] Amati indikator LED pada casing:
-    - LED berkedip cepat : Sistem sedang booting
-    - LED menyala stabil : Sistem siap digunakan
-    - LED mati           : Periksa sumber daya
-```
-
-### 5.2 Memverifikasi Sistem Melalui Blynk
-
-```
-[1] Buka aplikasi Blynk di smartphone
-[2] Login dengan akun yang terdaftar
-[3] Buka dashboard "DIAFOS"
-[4] Tunggu hingga status device berubah menjadi "Online"
-    (biasanya 10 - 30 detik setelah alat dinyalakan)
-[5] Verifikasi bahwa semua data sensor mulai tampil:
-    - Pressure 1-5 : Tekanan kaki (5 titik)
-    - SpO2         : Saturasi oksigen
-    - Heart Rate   : Detak jantung
-    - Temperature  : Suhu permukaan kaki
-    - Humidity     : Kelembapan lokal
-```
-
-### 5.3 Urutan Inisialisasi Normal
-
-Jika terhubung ke komputer via USB, Serial Monitor (115200 baud) menampilkan:
-
-```
-╔═══════════════════════════════════════╗
-║   DIAFOS V2 - Monitoring System       ║
-╚═══════════════════════════════════════╝
-
-→ Initializing FSR402 Pressure Sensors...
-  ✓ FSR402 pins initialized (5 sensors)
-
-→ Connecting to WiFi...
-  ✓ WiFi Connected!
-
-→ Connecting to Blynk...
-  ✓ Blynk Connected!
-
-→ Initializing I2C Bus...
-  ✓ I2C initialized
-  ✓ Device at 0x40 - HTU21D/SHT21
-  ✓ Device at 0x57 - MAX30102
-
-╔═══════════════════════════════════════╗
-║  SYSTEM STATUS SUMMARY                ║
-║  FSR402 Sensors (5): ✓ Ready          ║
-║  MAX30102 (SpO2)   : ✓ Connected      ║
-║  HTU21D/SHT21      : ✓ Connected      ║
-║  WiFi Connection   : ✓ Connected      ║
-║  Blynk Cloud       : ✓ Connected      ║
-╚═══════════════════════════════════════╝
+       [ALUR PROTOKOL GERAKAN PASIEN]
+  
+  +-------------------------------------------------------+
+  |  Fase 1: Baseline Istirahat (Duduk Rileks) - 3 Menit   |
+  +---------------------------+---------------------------+
+                              |
+                              v
+  +-------------------------------------------------------+
+  |  Fase 2: Berdiri Statis (Weight-Bearing)   - 3 Menit   |
+  +---------------------------+---------------------------+
+                              |
+                              v
+  +-------------------------------------------------------+
+  |  Fase 3: Alih Beban Kiri-Kanan (Shift)     - 2 Menit   |
+  +---------------------------+---------------------------+
+                              |
+                              v
+  +-------------------------------------------------------+
+  |  Fase 4: Gerakan Jinjit & Angkat Jari     - 10-15x    |
+  +---------------------------+---------------------------+
+                              |
+                              v
+  +-------------------------------------------------------+
+  |  Fase 5: Berjalan Normal (Normal Gait)     - 3 Menit   |
+  +---------------------------+---------------------------+
+                              |
+                              v
+  +-------------------------------------------------------+
+  |  Fase 6: Pemulihan / Rest Recovery        - 3 Menit   |
+  +-------------------------------------------------------+
 ```
 
 ---
 
-## 6. Prosedur Koneksi WiFi Pertama Kali
+### 7.1 Detail Pelaksanaan Setiap Gerakan
 
-Prosedur ini hanya dilakukan saat **pertama kali** menggunakan alat di jaringan WiFi baru.
-
-### 6.1 Mode Konfigurasi WiFi
-
-```
-[1] Nyalakan alat
-[2] Alat akan mencoba connect ke WiFi tersimpan (selama 10 detik)
-[3] Jika tidak ada WiFi tersimpan, alat otomatis membuat hotspot:
-    SSID     : DIAFOS_Setup
-    Password : diafos123
-```
-
-### 6.2 Konfigurasi via Smartphone
-
-```
-[1] Buka pengaturan WiFi di smartphone
-[2] Cari dan hubungkan ke "DIAFOS_Setup"
-[3] Masukkan password: diafos123
-[4] Browser akan otomatis membuka halaman konfigurasi
-    Jika tidak otomatis, buka browser dan ketik: 192.168.4.1
-
-[5] Di halaman konfigurasi:
-    a. Tap "Configure WiFi"
-    b. Pilih nama WiFi dari daftar yang tersedia
-    c. Masukkan password WiFi
-    d. Tap "Save"
-
-[6] Alat akan restart dan otomatis terhubung ke WiFi yang dipilih
-[7] Indikator LED akan stabil setelah berhasil terhubung
-```
-
-### 6.3 Verifikasi Koneksi
-
-```
-[1] Buka aplikasi Blynk
-[2] Tunggu status device berubah menjadi "Online"
-[3] Jika berhasil, dashboard akan menampilkan data sensor secara real-time
-```
-
-> **Catatan:** Kredensial WiFi tersimpan di dalam alat. Untuk sesi berikutnya, alat akan otomatis terhubung tanpa konfigurasi ulang, selama berada dalam jangkauan WiFi yang sama.
+#### FASE 1 — Baseline Istirahat Duduk (Rest Baseline)
+* **Durasi:** 3 Menit (Timestamp: 00:00 - 03:00)
+* **Posisi Pasien:** Duduk tegak di kursi tanpa menyandarkan paha secara berlebih, kedua telapak kaki menapak ringan di lantai tanpa memberikan tekanan beban tubuh.
+* **Instruksi Pasien:** "Duduk tenang, rilekskan kaki, jangan banyak bicara atau memindahkan posisi kaki."
+* **Tujuan Pengambilan Data:** Mengambil data baseline kondisi suhu, kelembapan awal, SpO2 & BPM saat istirahat, serta offset dasar FSR.
 
 ---
 
-## 7. Monitoring Data Real-Time
-
-### 7.1 Panel Data pada Aplikasi Blynk
-
-| Virtual Pin | Parameter | Satuan | Nilai Normal |
-|-------------|-----------|--------|--------------|
-| V0 | Tekanan FSR 1 (Tumit) | kPa | 0 - 200 |
-| V1 | Tekanan FSR 2 (Metatarsal) | kPa | 0 - 200 |
-| V2 | Tekanan FSR 3 (Ibu Jari) | kPa | 0 - 200 |
-| V3 | Tekanan FSR 4 (Sisi Luar) | kPa | 0 - 200 |
-| V4 | Tekanan FSR 5 (Tengah) | kPa | 0 - 200 |
-| V5 | Saturasi Oksigen (SpO2) | % | > 93% |
-| V6 | Detak Jantung | BPM | 60 - 100 |
-| V7 | Suhu Permukaan Kaki | derajat C | 30 - 35 |
-| V8 | Kelembapan Lokal | %RH | < 74% |
-| V9 | Level Peringatan | Teks | NORMAL |
-| V10 | Status Sistem | Teks | Connected |
-
-### 7.2 Prosedur Pengambilan Data
-
-```
-[1] Pastikan pasien sudah dalam posisi yang ditentukan oleh protokol penelitian
-
-[2] Tunggu sistem stabil selama minimal 2 menit setelah pemasangan
-    (sensor perlu waktu adaptasi terhadap suhu dan tekanan awal)
-
-[3] Untuk pembacaan SpO2 yang akurat:
-    - Sensor MAX30102 harus bersentuhan langsung dengan kulit
-    - Pastikan sensor tidak bergerak saat pengukuran berlangsung
-    - Nilai SpO2 memerlukan waktu 5-10 detik untuk stabil
-
-[4] Selama sesi pengukuran:
-    - Pantau dashboard Blynk secara berkala
-    - Catat perubahan Level Peringatan
-    - Dokumentasikan waktu dan kondisi pasien pada lembar catatan
-
-[5] Data dikirim ke Blynk setiap 5 detik secara otomatis
-```
-
-### 7.3 Panduan Kondisi Aktivitas Pasien
-
-| Kondisi | Durasi | Tujuan |
-|---------|--------|--------|
-| Duduk istirahat | 5 menit | Baseline data |
-| Berdiri diam | 5 menit | Distribusi berat statis |
-| Berjalan pelan | 5 menit | Pola tekanan dinamis |
-| Duduk kembali | 5 menit | Data recovery |
-
-> Sesuaikan protokol aktivitas dengan arahan peneliti utama.
+#### FASE 2 — Berdiri Statis Tegak (Stance / Weight-Bearing)
+* **Durasi:** 3 Menit (Timestamp: 03:00 - 06:00)
+* **Posisi Pasien:** Berdiri tegak dengan kedua kaki dibuka selebar bahu. Pandangan lurus ke depan, beban tubuh terbagi seimbang (50:50) antara kaki kiri dan kanan.
+* **Instruksi Pasien:** "Berdiri tegak secara alami, bagikan berat badan secara seimbang pada kedua kaki, usahakan tidak bergoyang."
+* **Tujuan Pengambilan Data:** Mengukur distribusi tekanan plantar statis (tumit vs metatarsal vs ibu jari) saat menahan beban tubuh penuh.
 
 ---
 
-## 8. Memahami Indikator Alert
-
-Sistem DIAFOS V2 memiliki 4 level peringatan:
-
-### Level NORMAL
-
-```
-Kondisi  : Semua parameter dalam rentang normal
-Tindakan : Lanjutkan monitoring, tidak ada tindakan khusus
-Blynk    : Label menampilkan "NORMAL"
-```
-
-### Level RINGAN
-
-```
-Kondisi  : 1 parameter berada di luar rentang normal
-Parameter yang memicu:
-  - Tekanan >= 448 kPa pada salah satu FSR
-  - Suhu >= 38 derajat C
-  - Kelembapan >= 74%
-  - SpO2 <= 93%
-
-Tindakan :
-  [1] Catat waktu dan kondisi saat alert terjadi
-  [2] Periksa apakah posisi kaki atau sensor bergeser
-  [3] Observasi pasien dan tanyakan kondisi yang dirasakan
-  [4] Lanjutkan monitoring dengan pengawasan lebih seksama
-```
-
-### Level SEDANG
-
-```
-Kondisi  : 2 parameter berada di luar rentang normal
-Tindakan :
-  [1] Hentikan aktivitas yang sedang dilakukan pasien
-  [2] Minta pasien untuk duduk dan istirahat
-  [3] Lakukan pemeriksaan fisik pada kaki (secara visual)
-  [4] Catat semua data pada lembar dokumentasi
-  [5] Konsultasikan dengan tenaga medis jika kondisi tidak membaik dalam 5 menit
-```
-
-### Level BAHAYA
-
-```
-Kondisi  : 3 atau lebih parameter abnormal ATAU parameter kritis terlampaui
-Tindakan :
-  [1] SEGERA hentikan sesi pengambilan data
-  [2] Lepaskan alat dari pasien (ikuti Prosedur Pelepasan — Bagian 9)
-  [3] Berikan pertolongan pertama sesuai kondisi pasien
-  [4] Hubungi tenaga medis / dokter segera
-  [5] Dokumentasikan semua kejadian secara detail
-```
-
-> **Penting:** Alert sistem ini adalah sistem peringatan dini berbasis data sensor. Penilaian klinis tetap harus dilakukan oleh tenaga kesehatan yang berkualifikasi.
+#### FASE 3 — Pergeseran Beban Tubuh (Weight Shift / Lateral Balance)
+* **Durasi:** 2 Menit (Timestamp: 06:00 - 08:00)
+* **Posisi Pasien:** Berdiri tegak, lalu perlahan menggeser tumpuan berat badan ke kaki yang terpasang alat (selama 5 detik), lalu menggeser tumpuan ke kaki sebelahnya (selama 5 detik). Diulang sebanyak 10 kali.
+* **Instruksi Pasien:** "Geser berat badan Anda perlahan ke kaki kanan (tahan 5 detik), lalu geser ke kaki kiri (tahan 5 detik). Lakukan secara perlahan."
+* **Tujuan Pengambilan Data:** Memantau respon sensor FSR402 terhadap perubahan dinamika beban puncak (peak load) dan transisi lateral.
 
 ---
 
-## 9. Prosedur Pelepasan Alat
-
-### LANGKAH 1 — Matikan Sistem
-
-```
-[1] Simpan atau catat data terakhir dari dashboard Blynk
-[2] Matikan alat melalui tombol power atau cabut sumber daya
-[3] Tunggu LED pada casing padam sepenuhnya
-```
-
-### LANGKAH 2 — Lepas Koneksi Kabel
-
-```
-[1] Lepaskan konektor bundle kabel dari casing betis
-     - Pegang bagian konektor plastik (BUKAN kabelnya) saat melepas
-     - Jangan menarik kabel secara paksa
-[2] Gulung bundle kabel dengan longgar untuk mencegah kabel tertekuk
-```
-
-### LANGKAH 3 — Lepas Casing dari Betis
-
-```
-[1] Minta pasien untuk tetap duduk
-[2] Buka rekat strap velcro perlahan dari satu sisi
-[3] Angkat casing dari betis pasien dengan hati-hati
-[4] Periksa kondisi kulit betis pasien:
-     - Apakah ada bekas tekanan berlebih?
-     - Apakah ada kemerahan atau bercak?
-     - Tanyakan apakah ada rasa tidak nyaman atau nyeri
-[5] Catat kondisi kulit pada lembar dokumentasi
-```
-
-### LANGKAH 4 — Lepas Sol dari Alas Kaki
-
-```
-[1] Minta pasien untuk melepas alas kaki terlebih dahulu
-[2] Keluarkan sol sensor dari alas kaki dengan hati-hati
-     - Pegang sol dari tepi, bukan dari area sensor
-     - Tarik perlahan dan merata dari kedua sisi
-     - Jangan menarik dari satu sisi saja untuk menghindari terlipat
-[3] Periksa kondisi sol — pastikan tidak ada sensor yang terlepas
-```
-
-### LANGKAH 5 — Perawatan Pasca Pelepasan
-
-```
-[1] Bersihkan permukaan sol sensor dengan kain lembab (lap, jangan dicuci)
-[2] Bersihkan permukaan casing dengan lap kering
-[3] Periksa seluruh kabel untuk memastikan tidak ada kerusakan
-[4] Simpan alat di tempat penyimpanan yang kering dan aman
-[5] Lengkapi lembar dokumentasi pengukuran
-```
+#### FASE 4 — Gerakan Jinjit (Plantarflexion) & Angkat Ujung Kaki (Dorsiflexion)
+* **Durasi:** 10–15 kali Repetisi (~2 Menit, Timestamp: 08:00 - 10:00)
+* **Posisi Pasien:** Berdiri di dekat pegangan/meja untuk menjaga keseimbangan (jika diperlukan).
+* **Instruksi Gerakan:**
+  1. **Jinjit (Plantarflexion):** Pasien mengangkat tumit tinggi-tinggi sehingga beban tertumpu pada bola kaki & ibu jari (tahan 2 detik), lalu turunkan.
+  2. **Angkat Jari (Dorsiflexion):** Pasien mengangkat ujung depan kaki sehingga beban tertumpu penuh pada tumit (tahan 2 detik), lalu turunkan.
+* **Tujuan Pengambilan Data:** Menguji puncak tekanan pada sensor FSR 1 (tumit) vs FSR 2 & 3 (metatarsal & ibu jari), serta mengamati perfusi SpO2 saat kontraksi otot betis.
 
 ---
 
-## 10. Pemeliharaan Harian
+#### FASE 5 — Berjalan Normal (Normal Gait Walking)
+* **Durasi:** 3 Menit / ~30-50 Langkah (Timestamp: 10:00 - 13:00)
+* **Posisi Pasien:** Berjalan lurus pada lintasan datar sepanjang 5–10 meter dengan kecepatan berjalan alami pasien.
+* **Instruksi Pasien:** "Berjalanlah secara alami seperti biasa menyusuri lintasan ini. Putar balik perlahan di ujung lintasan."
+* **Tujuan Pengambilan Data:** Mengambil siklus gait dinamis penuh (Heel Strike -> Midstance -> Push-off / Toe-off).
 
-### 10.1 Sebelum Setiap Sesi Penggunaan
+---
 
-| No | Pemeriksaan | Cara Memeriksa | Kondisi Normal |
-|----|-------------|----------------|----------------|
-| 1 | Status baterai / power bank | Cek indikator daya | Minimal 80% |
-| 2 | Kondisi kabel | Inspeksi visual sepanjang kabel | Tidak ada kerusakan |
-| 3 | Kondisi sol sensor | Inspeksi visual | Sensor menempel, tidak retak |
-| 4 | Kondisi strap velcro | Rekatkan dan cek daya rekat | Menempel kuat, tidak aus |
-| 5 | Kondisi konektor | Cek pin konektor | Bersih, tidak bengkok |
-| 6 | Koneksi WiFi tersedia | Cek dari smartphone | Sinyal tersedia |
+#### FASE 6 — Pemulihan Istirahat (Rest Recovery Phase)
+* **Durasi:** 3 Menit (Timestamp: 13:00 - 16:00)
+* **Posisi Pasien:** Duduk kembali di kursi pengujian dengan posisi rileks.
+* **Instruksi Pasien:** "Silakan duduk kembali dan istirahat."
+* **Tujuan Pengambilan Data:** Mengamati kecepatan pemulihan (recovery time) detak jantung (BPM), saturasi SpO2, serta penurunan suhu/kelembapan lokal pasca aktivitas fisik.
 
-### 10.2 Setelah Setiap Sesi Penggunaan
+---
 
+### 7.2 Lembar Catatan Gerakan Pasien (Log Time-Stamping)
+
+Operator **WAJIB** mencatat timestamp waktu (atau milidetik pada log) saat perpindahan fase gerakan terjadi untuk memudahkan pelabelan data (data labeling) saat analisis:
+
+| Fase Gerakan | Waktu Mulai (WIB / mm:ss) | Waktu Selesai (mm:ss) | Catatan Khusus / Kendala Pasien |
+|--------------|---------------------------|-----------------------|--------------------------------|
+| **Fase 1: Baseline Duduk** | ____ : ____ | ____ : ____ | |
+| **Fase 2: Berdiri Statis** | ____ : ____ | ____ : ____ | |
+| **Fase 3: Weight Shift** | ____ : ____ | ____ : ____ | |
+| **Fase 4: Jinjit & Dorsi** | ____ : ____ | ____ : ____ | |
+| **Fase 5: Berjalan Normal**| ____ : ____ | ____ : ____ | |
+| **Fase 6: Rest Recovery**  | ____ : ____ | ____ : ____ | |
+
+---
+
+## 8. Monitoring & Manajemen Data (SD Card CSV)
+
+### 8.1 Format File Log CSV (`data_kesehatan.csv`)
+Data disimpan secara otomatis oleh ESP32 #2 pada SD Card dengan struktur kolom sebagai berikut:
+
+```csv
+Waktu_ms,BPM,SpO2,Suhu_SHT31,Kelembapan_SHT31
+1000,75,98,22.81,64.07
+2000,76,98,22.76,64.14
+3000,75,98,22.80,64.10
 ```
-[1] Bersihkan sol sensor dengan lap kering / kain lembab
-[2] Bersihkan casing dari debu dan keringat dengan lap kering
-[3] Gulung kabel dengan longgar dan ikat dengan pengikat kabel
-[4] Isi ulang baterai / power bank
-[5] Simpan semua komponen dalam tas / wadah penyimpanan
-[6] Lengkapi rekap data sesi pada lembar dokumentasi
-```
 
-### 10.3 Pemeriksaan Mingguan
+* **`Waktu_ms`:** Waktu berjalan (timestamp `millis()`) sejak ESP32 Receiver dinyalakan (milidetik).
+* **`BPM`:** Detak jantung hasil kalkulasi moving average sensor MAX30105 (bpm).
+* **`SpO2`:** Saturasi oksigen darah perifer (% SpO2).
+* **`Suhu_SHT31`:** Suhu permukaan kulit kaki dari ESP32 #1 via ESP-NOW (°C).
+* **`Kelembapan_SHT31`:** Kelembapan mikro-lingkungan sol kaki (%RH).
 
-```
-[1] Lakukan I2C Scan untuk verifikasi sensor MAX30102 & HTU21D terbaca
-[2] Cek semua 5 FSR dengan memberikan tekanan manual pada masing-masing
-[3] Verifikasi data di Blynk Dashboard masih update dengan benar
-[4] Bersihkan konektor dengan cotton bud kering jika perlu
-[5] Periksa kekuatan rekat strap velcro dan ganti jika sudah aus
-```
+### 8.2 Prosedur Pencabutan & Penyimpanan Data SD Card
+1. Matikan daya ESP32 #2 sebelum mencabut Kartu SD (mencegah corrupt file).
+2. Tekan dan keluarkan Kartu SD dari slotnya.
+3. Masukkan Kartu SD ke Card Reader PC / Laptop operator.
+4. Salin file `data_kesehatan.csv` dan rename sesuai format ID Pasien:  
+   `DFU_[ID_PASIEN]_[TANGGAL]_[SESI].csv` (Contoh: `DFU_P001_20260929_S1.csv`).
+5. Kosongkan / Arsipkan file di SD Card agar siap digunakan untuk sesi pengujian berikutnya.
 
 ---
 
-## 11. Troubleshooting Cepat
+## 9. Memahami Indikator Alert & Batas Kritis
 
-### Alat Tidak Menyala
+Selama protokol gerakan berlangsung, operator harus memperhatikan Serial Monitor / Indikator sistem terhadap batas kriteria klinis berikut:
 
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Baterai / power bank habis | Isi ulang daya dan coba lagi |
-| Kabel USB longgar | Pastikan kabel USB tersambung dengan kuat |
-| Tombol power tidak berfungsi | Coba tekan lebih lama (2-3 detik) |
-
----
-
-### Tidak Bisa Connect ke WiFi
-
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| WiFi belum dikonfigurasi | Ikuti Prosedur Koneksi WiFi (Bagian 6) |
-| Password WiFi salah | Reset konfigurasi WiFi, ulangi setup |
-| Sinyal WiFi lemah | Dekatkan ke router WiFi |
-| WiFi menggunakan frekuensi 5GHz | ESP32 hanya support WiFi 2.4GHz |
+| Parameter | Rentang Normal | Batas Alert / Abnormal | Tindakan Operator |
+|-----------|----------------|------------------------|-------------------|
+| **SpO2** | 95% – 100% | **< 92%** | Hentikan aktivitas, minta pasien duduk & berikan oksigen/istirahat |
+| **Detak Jantung (BPM)** | 60 – 100 bpm | **> 120 bpm** atau **< 50 bpm** | Istirahatkan pasien, cek nadi manual |
+| **Suhu Kulit (SHT31)** | 30.0°C – 35.5°C | **> 37.5°C** (Indikasi Inflamasi/Infeksi) | Catat lokasi inflamasi, laporkan ke dokter |
+| **Kelembapan (SHT31)** | 40% – 70% RH | **> 85% RH** (Risiko Maserasi Kulit) | Keringkan kaki pasien pasca tes |
+| **Tekanan FSR** | 0 – 200 kPa | **> 450 kPa** (Tekanan Berlebih) | Hentikan jinjit berlebih jika pasien merasa nyeri |
 
 ---
 
-### Data Tidak Muncul di Blynk
+## 10. Prosedur Pelepasan & Perawatan Alat
 
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Alat tidak terhubung internet | Periksa koneksi WiFi terlebih dahulu |
-| Auth Token salah di program | Cek kembali token di kode program |
-| Aplikasi Blynk belum login | Login ke akun yang benar di aplikasi |
+### LANGKAH 1 — Pelepasan dari Pasien
+1. Matikan daya ESP32 #1 (Transmitter betis) dan ESP32 #2 (Receiver).
+2. Lepaskan modul sensor MAX30105 dari kulit pasien secara perlahan.
+3. Lepaskan konektor kabel dari casing betis (pegang housing konektor, jangan menarik kabelnya).
+4. Buka strap velcro dan lepaskan casing betis.
+5. Minta pasien melepas alas kaki, lalu keluarkan sol sensor secara perlahan dari alas kaki.
 
----
-
-### SpO2 Bernilai 0 atau Tidak Stabil
-
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Sensor MAX30102 tidak menempel ke kulit | Pastikan sensor menyentuh kulit langsung |
-| Sensor bergerak saat pengukuran | Stabilkan posisi sensor, minta pasien diam |
-| Cahaya luar terlalu terang (sinar matahari) | Hindari sinar langsung pada sensor |
-| Konektor kabel sensor longgar | Periksa dan kencangkan konektor |
-
-> Tunggu minimal **10 detik** setelah sensor stabil untuk mendapatkan nilai SpO2 yang valid.
+### LANGKAH 2 — Sanitasi & Pemeliharaan Alat
+1. **Sol Sensor & Kabel:** Usap permukaan sol dan kabel menggunakan kain mikrofiber yang dibasahi sedikit alkohol 70% / cairan disinfektan medis (JANGAN MERENDAM SOL/SENSOR DALAM AIR).
+2. **Casing Betis & Strap:** Bersihkan casing dengan lap kering. Cuci strap velcro secara berkala jika kotor.
+3. **Penyimpanan:** Gulung kabel sensor secara melingkar longgar (diameter min 10 cm), masukkan seluruh komponen ke dalam tas simpan anti-statis / dry box.
 
 ---
 
-### Pembacaan FSR Semua Bernilai 0
+## 11. Troubleshooting Cepat (ESP-NOW & SD Card)
 
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Konektor bundle kabel belum tersambung | Pasang kembali konektor dengan benar |
-| Kabel FSR putus | Periksa setiap kabel secara visual |
-| Posisi sol bergeser di dalam alas kaki | Keluarkan dan pasang kembali sol sensor |
+### 11.1 ESP-NOW Tidak Terhubung (Data Suhu/FSR Bernilai 0.00 / Timeout)
+- **Penyebab:** MAC Address receiver salah di program transmitter, atau channel WiFi tidak cocok.
+- **Solusi:**
+  1. Pastikan `broadcastAddress[]` pada `transmitSHT.ino` sesuai dengan MAC Address ESP32 #2.
+  2. Pastikan kedua ESP32 berjalan pada **Channel WiFi 1**.
+  3. Periksa daya baterai ESP32 #1 di betis.
 
----
+### 11.2 SD Card Error ("SD Card Mount Failed" / "Cannot open data_kesehatan.csv")
+- **Penyebab:** Kartu SD tidak terformat FAT32, longgar, atau corrupt.
+- **Solusi:**
+  1. Cabut dan pasang ulang Kartu SD.
+  2. Format ulang Kartu SD ke file system **FAT32** (bukan exFAT/NTFS).
+  3. Gunakan SD Card dengan kapasitas 32GB atau lebih kecil.
 
-### Casing Longgar di Betis
-
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Strap velcro terlalu longgar | Kencangkan kembali strap |
-| Velcro sudah aus / tidak lengket | Ganti strap velcro baru |
-| Diameter betis terlalu kecil | Gunakan bantalan foam tipis di bawah casing |
-
----
-
-### Sistem Restart Sendiri (ESP32 Reboot)
-
-| Kemungkinan Penyebab | Solusi |
-|---------------------|--------|
-| Daya dari power bank tidak stabil | Ganti power bank dengan output yang lebih stabil (min. 1A) |
-| Kabel USB longgar | Pastikan kabel USB terhubung erat |
-| Overheating | Pastikan casing tidak terhalang aliran udara |
+### 11.3 BPM / SpO2 Terbaca 0 atau Fluktuatif Ekstrem
+- **Penyebab:** Sensor MAX30105 tergeser saat gerakan pasien, atau terkena cahaya lingkungan yang terlalu terang.
+- **Solusi:**
+  1. Kencangkan plester perekat sensor optik pada kulit.
+  2. Tutup area sensor dengan kain gelap tipis untuk memblokir cahaya sekitar.
+  3. Minta pasien tidak menggerakkan kaki berlebih saat pembacaan.
 
 ---
 
-## 12. Checklist Harian
+## 12. Checklist Harian (Pra & Pasca Sesi)
 
-### Checklist Sebelum Sesi
-
+### Checklist Sebelum Sesi Pengujian
 ```
 TANGGAL     : _______________________________
 OPERATOR    : _______________________________
 ID PASIEN   : _______________________________
-SESI KE-    : _______________________________
 
-PERSIAPAN ALAT:
-[ ] Baterai / power bank terisi > 80%
-[ ] Kondisi kabel tidak ada kerusakan
-[ ] Sol sensor bersih dan semua sensor menempel
-[ ] Casing tidak ada kerusakan fisik
-[ ] Strap velcro masih lengket dengan baik
-[ ] Konektor bersih dan pin tidak bengkok
+[ ] Kartu SD (FAT32) terpasang di ESP32 #2
+[ ] Baterai ESP32 #1 & #2 terisi penuh (> 80%)
+[ ] Sol sensor bersih & tidak terlipat
+[ ] Casing betis & strap velcro dalam kondisi baik
+[ ] Pasien diinformasikan mengenai 6 fase gerakan
+[ ] ESP-NOW terhubung (Data SHT31 & FSR terbaca di Serial)
+[ ] MAX30105 terkalibrasi (BPM & SpO2 valid)
+[ ] File CSV pada SD Card siap mencatat
 
-PERSIAPAN PASIEN:
-[ ] Kondisi kulit kaki diperiksa dan dicatat
-[ ] Kondisi betis tempat pemasangan diperiksa
-[ ] Tidak ada luka terbuka pada area pemasangan
-[ ] Pasien memahami prosedur dan memberikan persetujuan
-
-PEMASANGAN:
-[ ] Sol terpasang dengan benar di dalam alas kaki
-[ ] Bundle kabel tidak terjepit atau tegang
-[ ] Casing terpasang di betis dengan kencangan yang tepat
-[ ] Pasien tidak merasakan kesemutan atau ketidaknyamanan
-[ ] Koneksi kabel tersambung dengan benar
-[ ] Sumber daya tersambung
-
-SISTEM:
-[ ] Alat menyala (LED aktif)
-[ ] WiFi terhubung
-[ ] Status Blynk: Online
-[ ] Semua data sensor tampil di dashboard (tidak ada nilai 0 yang janggal)
-
-CATATAN AWAL:
-__________________________________________________
-__________________________________________________
-
-Tanda tangan operator: ___________________________
+Tanda Tangan Operator: _______________________
 ```
 
----
-
-### Checklist Setelah Sesi
-
+### Checklist Setelah Sesi Pengujian
 ```
-WAKTU SELESAI  : _______________________________
-DURASI SESI    : _______________________________
+[ ] Pengambilan data 6 fase gerakan selesai dilaksanakan
+[ ] ESP32 #1 dan #2 dimatikan
+[ ] Alat dilepas dari betis & kaki pasien dengan aman
+[ ] File 'data_kesehatan.csv' berhasil disalin & di-rename ke PC
+[ ] SD Card dikosongkan / diarsipkan untuk sesi berikutnya
+[ ] Sol sensor & casing dibersihkan dengan alkohol swab
+[ ] Kabel digulung rapi dan disimpan di dry box
 
-DATA:
-[ ] Data telah tersimpan / dicatat dari Blynk
-[ ] Lembar dokumentasi pasien dilengkapi
-[ ] Alert yang terjadi selama sesi dicatat beserta waktu kejadian
-
-PELEPASAN ALAT:
-[ ] Alat dimatikan sebelum dilepas
-[ ] Konektor dilepas dengan benar (tidak ditarik paksa)
-[ ] Casing dilepas dari betis pasien
-[ ] Kondisi kulit betis setelah pelepasan diperiksa dan dicatat
-[ ] Sol dikeluarkan dari alas kaki dengan hati-hati
-[ ] Kondisi sol dan sensor diperiksa setelah pelepasan
-
-PASCA SESI:
-[ ] Sol dibersihkan dengan lap lembab
-[ ] Casing dibersihkan dengan lap kering
-[ ] Kabel digulung dengan rapi
-[ ] Baterai / power bank disambungkan untuk isi ulang
-[ ] Alat disimpan di tempat penyimpanan yang benar
-
-KONDISI ALAT SETELAH SESI:
-[ ] Baik, tidak ada kerusakan
-[ ] Ditemukan kerusakan pada: __________________
-
-CATATAN TAMBAHAN:
-__________________________________________________
-__________________________________________________
-
-Tanda tangan operator: ___________________________
+Tanda Tangan Operator: _______________________
 ```
-
----
-
-## Kontak & Eskalasi
-
-Jika ditemukan masalah yang tidak dapat diselesaikan dengan panduan ini:
-
-| Kondisi | Tindakan |
-|---------|----------|
-| Kerusakan hardware (kabel putus, sensor rusak) | Hubungi tim teknis / peneliti utama |
-| Kondisi medis pasien tidak normal | Hubungi tenaga kesehatan segera |
-| Data tidak konsisten / mencurigakan | Dokumentasikan dan laporkan ke peneliti utama |
-| Pertanyaan teknis program / firmware | Lihat README_Diafos.md atau hubungi pengembang |
 
 ---
 
 ## Disclaimer
 
-Alat DIAFOS V2 adalah perangkat **penelitian** dan bersifat **supplementary**. Alat ini:
-- **TIDAK** menggantikan pemeriksaan klinis oleh dokter atau tenaga kesehatan
-- **TIDAK** digunakan sebagai dasar diagnosis medis
-- **TIDAK** digunakan dalam kondisi darurat medis
-
-**Untuk kondisi medis darurat, segera hubungi layanan kesehatan profesional (IGD / 119).**
+Sistem DIAFOS V2 dan SOP ini ditujukan **khusus untuk kegiatan penelitian akademik & uji akuisisi data**. Perangkat ini tidak dimaksudkan untuk menggantikan alat diagnosis medis tersertifikasi atau tindakan pertolongan darurat.
 
 ---
-
-*SOP ini dibuat berdasarkan README_Diafos.md — DIAFOS V2 Diabetic Foot Monitoring System*  
-*Versi dokumen: SOP-DIAFOS-V2-001 | Terakhir diperbarui: September 2026*
+*SOP-DIAFOS-V2-002 | Diperbarui: September 2026 | Berdasarkan Dokumentasi Firmware ESP-NOW & SD Logger*
